@@ -12,8 +12,8 @@ class TodoApp:
     def __init__(self, service: TaskService) -> None:
         self.service = service
         self.root = tk.Tk()
-        self.root.title("Todo Manager Starter")
-        self.root.geometry("850x560")
+        self.root.title("Todo Manager App")
+        self.root.geometry("720x720")
         self.selected_id: int | None = None
 
         self.title_var = tk.StringVar()
