@@ -90,6 +90,10 @@ class TodoApp:
         for column in columns:
             self.table.heading(column, text=headings[column])
             self.table.column(column, width=widths[column])
+
+        # Treeview tags let us style rows without putting presentation logic
+        # into the repository or database layer.
+        self.table.tag_configure("overdue", foreground="#b42318")
         self.table.pack(fill=tk.BOTH, expand=True)
         self.table.bind("<<TreeviewSelect>>", self._on_select)
 
@@ -128,6 +132,7 @@ class TodoApp:
         tasks = self.service.list_tasks(self.search_var.get(), self.status_var.get())
         for task in tasks:
             status = "Completed" if task.completed else "Active"
+            tags = ("overdue",) if self.service.is_overdue(task) else ()
             self.table.insert(
                 "",
                 tk.END,
@@ -138,6 +143,7 @@ class TodoApp:
                     task.due_date or "",
                     status,
                 ),
+                tags=tags,
             )
 
     def _input_values(self) -> tuple[str, str, str, str]:

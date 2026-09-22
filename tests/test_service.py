@@ -17,6 +17,22 @@ def test_service_detects_overdue_tasks(service):
     assert service.is_overdue(task) is True
 
 
+def test_completed_overdue_task_is_not_overdue(service):
+    task = service.add_task("Finished old task", due_date="2020-01-01")
+    completed = service.toggle_completed(task.id)
+
+    assert service.is_overdue(completed) is False
+
+
+def test_task_due_today_is_not_overdue(service):
+    from datetime import UTC, datetime
+
+    today = datetime.now(UTC).date().isoformat()
+    task = service.add_task("Task due today", due_date=today)
+
+    assert service.is_overdue(task) is False
+
+
 def test_service_updates_task_fields(service):
     task = service.add_task("Draft", description="Old")
 
