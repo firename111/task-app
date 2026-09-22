@@ -22,6 +22,7 @@ class TodoApp:
         self.due_date_var = tk.StringVar()
         self.search_var = tk.StringVar()
         self.status_var = tk.StringVar(value="All")
+        self.message_var = tk.StringVar(value="Ready")
         self._build_widgets()
         self.refresh()
 
@@ -113,6 +114,10 @@ class TodoApp:
             side=tk.RIGHT, padx=3
         )
 
+        ttk.Label(frame, textvariable=self.message_var, anchor="w").pack(
+            fill=tk.X, pady=(8, 0)
+        )
+
     def _on_select(self, _event=None) -> None:
         selection = self.table.selection()
         if not selection:
@@ -156,12 +161,20 @@ class TodoApp:
 
     def add(self) -> None:
         try:
-            self.service.add_task(*self._input_values())
+            task = self.service.add_task(*self._input_values())
         except (ValueError, KeyError) as exc:
+            self.message_var.set(f"Cannot add task: {exc}")
             messagebox.showwarning("Invalid task", str(exc))
+            return
+        except Exception as exc:  # noqa: BLE001 - GUI event boundary
+            # Unexpected errors must be visible to the user instead of
+            # looking like the button did nothing.
+            self.message_var.set(f"Add failed: {exc}")
+            messagebox.showerror("Add task failed", str(exc))
             return
         self.clear_form()
         self.refresh()
+        self.message_var.set(f"Added task #{task.id}: {task.title}")
 
     def edit(self) -> None:
         if self.selected_id is None:
