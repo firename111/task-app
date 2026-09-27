@@ -19,10 +19,16 @@ class TodoApp:
         self.title_var = tk.StringVar()
         self.description_var = tk.StringVar()
         self.priority_var = tk.StringVar(value="Medium")
+        self.category_var = tk.StringVar(value="General")
         self.due_date_var = tk.StringVar()
         self.search_var = tk.StringVar()
         self.status_var = tk.StringVar(value="All")
+        self.priority_filter_var = tk.StringVar(value="All")
+        self.category_filter_var = tk.StringVar(value="All")
         self.message_var = tk.StringVar(value="Ready")
+        self.stats_var = tk.StringVar(
+            value="Total: 0 | Active: 0 | Completed: 0 | Overdue: 0"
+        )
         self._build_widgets()
         self.refresh()
 
@@ -48,9 +54,13 @@ class TodoApp:
             state="readonly",
             width=12,
         ).grid(row=1, column=1, sticky="w", padx=6, pady=6)
-        ttk.Label(form, text="Due date").grid(row=1, column=2, padx=6, pady=6)
-        ttk.Entry(form, textvariable=self.due_date_var, width=16).grid(
+        ttk.Label(form, text="Category").grid(row=1, column=2, padx=6, pady=6)
+        ttk.Entry(form, textvariable=self.category_var, width=16).grid(
             row=1, column=3, sticky="w", padx=6, pady=6
+        )
+        ttk.Label(form, text="Due date").grid(row=2, column=0, padx=6, pady=6)
+        ttk.Entry(form, textvariable=self.due_date_var, width=16).grid(
+            row=2, column=1, sticky="w", padx=6, pady=6
         )
 
         filters = ttk.Frame(frame)
@@ -69,8 +79,28 @@ class TodoApp:
         )
         status.pack(side=tk.LEFT, padx=6)
         status.bind("<<ComboboxSelected>>", lambda _event: self.refresh())
+        ttk.Label(filters, text="Priority").pack(side=tk.LEFT, padx=(12, 0))
+        priority_filter = ttk.Combobox(
+            filters,
+            textvariable=self.priority_filter_var,
+            values=("All", "High", "Medium", "Low"),
+            state="readonly",
+            width=10,
+        )
+        priority_filter.pack(side=tk.LEFT, padx=6)
+        priority_filter.bind("<<ComboboxSelected>>", lambda _event: self.refresh())
+        ttk.Label(filters, text="Category").pack(side=tk.LEFT, padx=(12, 0))
+        self.category_filter = ttk.Combobox(
+            filters,
+            textvariable=self.category_filter_var,
+            values=("All", "General"),
+            state="readonly",
+            width=14,
+        )
+        self.category_filter.pack(side=tk.LEFT, padx=6)
+        self.category_filter.bind("<<ComboboxSelected>>", lambda _event: self.refresh())
 
-        columns = ("id", "title", "priority", "due_date", "completed")
+        columns = ("id", "title", "priority", "category", "due_date", "completed")
         self.table = ttk.Treeview(
             frame, columns=columns, show="headings", selectmode="browse"
         )
@@ -78,6 +108,7 @@ class TodoApp:
             "id": "ID",
             "title": "Title",
             "priority": "Priority",
+            "category": "Category",
             "due_date": "Due date",
             "completed": "Status",
         }
@@ -85,6 +116,7 @@ class TodoApp:
             "id": 50,
             "title": 300,
             "priority": 100,
+            "category": 120,
             "due_date": 120,
             "completed": 100,
         }
@@ -117,6 +149,7 @@ class TodoApp:
         ttk.Label(frame, textvariable=self.message_var, anchor="w").pack(
             fill=tk.X, pady=(8, 0)
         )
+        ttk.Label(frame, textvariable=self.stats_var, anchor="w").pack(fill=tk.X)
 
     def _on_select(self, _event=None) -> None:
         selection = self.table.selection()
@@ -129,12 +162,22 @@ class TodoApp:
         self.title_var.set(task.title)
         self.description_var.set(task.description)
         self.priority_var.set(task.priority)
+        self.category_var.set(task.category)
         self.due_date_var.set(task.due_date or "")
 
     def refresh(self) -> None:
         for item in self.table.get_children():
             self.table.delete(item)
-        tasks = self.service.list_tasks(self.search_var.get(), self.status_var.get())
+        categories = ["All", *self.service.categories()]
+        self.category_filter.configure(values=categories)
+        if self.category_filter_var.get() not in categories:
+            self.category_filter_var.set("All")
+        tasks = self.service.list_tasks(
+            self.search_var.get(),
+            self.status_var.get(),
+            self.priority_filter_var.get(),
+            self.category_filter_var.get(),
+        )
         for task in tasks:
             status = "Completed" if task.completed else "Active"
             tags = ("overdue",) if self.service.is_overdue(task) else ()
@@ -145,17 +188,25 @@ class TodoApp:
                     task.id,
                     task.title,
                     task.priority,
+                    task.category,
                     task.due_date or "",
                     status,
                 ),
                 tags=tags,
             )
+        stats = self.service.statistics()
+        self.stats_var.set(
+            "Total: {total} | Active: {active} | Completed: {completed} | Overdue: {overdue}".format(
+                **stats
+            )
+        )
 
-    def _input_values(self) -> tuple[str, str, str, str]:
+    def _input_values(self) -> tuple[str, str, str, str, str]:
         return (
             self.title_var.get(),
             self.description_var.get(),
             self.priority_var.get(),
+            self.category_var.get(),
             self.due_date_var.get(),
         )
 
@@ -208,6 +259,7 @@ class TodoApp:
         self.title_var.set("")
         self.description_var.set("")
         self.priority_var.set("Medium")
+        self.category_var.set("General")
         self.due_date_var.set("")
         for item in self.table.selection():
             self.table.selection_remove(item)

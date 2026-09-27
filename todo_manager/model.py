@@ -12,6 +12,7 @@ class Task:
     title: str
     description: str
     priority: str
+    category: str
     due_date: str | None
     completed: bool
     created_at: datetime

@@ -16,6 +16,7 @@ def _task_from_row(row) -> Task:
         title=row["title"],
         description=row["description"],
         priority=row["priority"],
+        category=row["category"],
         due_date=row["due_date"],
         completed=bool(row["completed"]),
         created_at=datetime.fromisoformat(row["created_at"]),
@@ -30,16 +31,21 @@ class TaskRepository:
         self.database = database
 
     def create(
-        self, title: str, description: str, priority: str, due_date: str | None
+        self,
+        title: str,
+        description: str,
+        priority: str,
+        category: str,
+        due_date: str | None,
     ) -> Task:
         now = _now().isoformat()
         cursor = self.database.connection.execute(
             """
             INSERT INTO tasks
-                (title, description, priority, due_date, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (title, description, priority, category, due_date, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (title, description, priority, due_date, now, now),
+            (title, description, priority, category, due_date, now, now),
         )
         self.database.connection.commit()
         return self.get_by_id(cursor.lastrowid)
@@ -63,14 +69,15 @@ class TaskRepository:
         self.database.connection.execute(
             """
             UPDATE tasks
-            SET title = ?, description = ?, priority = ?, due_date = ?,
-                completed = ?, updated_at = ?
+            SET title = ?, description = ?, priority = ?, category = ?,
+                due_date = ?, completed = ?, updated_at = ?
             WHERE id = ?
             """,
             (
                 task.title,
                 task.description,
                 task.priority,
+                task.category,
                 task.due_date,
                 int(task.completed),
                 now,

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT NOT NULL DEFAULT '',
     priority TEXT NOT NULL DEFAULT 'Medium'
         CHECK (priority IN ('High', 'Medium', 'Low')),
+    category TEXT NOT NULL DEFAULT 'General',
     due_date TEXT,
     completed INTEGER NOT NULL DEFAULT 0
         CHECK (completed IN (0, 1)),
@@ -36,6 +37,13 @@ class Database:
 
     def initialize(self) -> None:
         self.connection.executescript(SCHEMA)
+        columns = {
+            row["name"] for row in self.connection.execute("PRAGMA table_info(tasks)")
+        }
+        if "category" not in columns:
+            self.connection.execute(
+                "ALTER TABLE tasks ADD COLUMN category TEXT NOT NULL DEFAULT 'General'"
+            )
         self.connection.commit()
 
     def close(self) -> None:

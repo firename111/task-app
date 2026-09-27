@@ -35,6 +35,10 @@ python -m pytest -q
 | Add a control or screen element | `todo_manager/ui.py` | `TodoApp._build_widgets` |
 | Prove behavior works | `tests/` | Add a focused test first |
 
+Implemented extensions include priority filtering, editable categories,
+automatic migration of older databases, overdue highlighting, and a live
+statistics bar.
+
 ## Architecture
 
 ```text
@@ -51,4 +55,3 @@ This separation makes each layer easier to test and replace.
 3. Add one small feature, such as a status filter.
 4. Add tests for the feature.
 5. Only then change the UI layout.
-
